@@ -45,7 +45,7 @@ func (x posts) readOne(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	post, err := models.Post{ID: oid}.Populate()
+	post, err := models.Post{ID: oid}.Get()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -91,4 +91,27 @@ func (x posts) destroy(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, post)
+}
+
+func (x posts) vote(c *gin.Context) {
+	oid, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response{false, err.Error(), ""})
+		return
+	}
+	post, err := models.Post{ID: oid}.Get()
+	if err != nil {
+		c.JSON(http.StatusNotFound, response{false, err.Error(), "no post with that id"})
+		return
+	}
+	var vote *models.Vote
+	if err := c.Bind(vote); err != nil {
+		c.JSON(http.StatusBadRequest, response{false, err.Error(), "invalid vote object"})
+		return
+	}
+	if err := post.Vote(vote); err != nil {
+		c.JSON(http.StatusInternalServerError, response{false, err.Error(), ""})
+		return
+	}
+	c.JSON(http.StatusOK, response{true, post, "succesfully voted on post"})
 }

@@ -1,11 +1,7 @@
 package controllers
 
 import (
-	"dedpidgon/thoughtsea/models"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -35,36 +31,15 @@ func (c Core) Init() {
 	c.GET("/posts", posts{}.read)
 	c.GET("/posts/:id", posts{}.readOne)
 	c.PUT("/posts", AuthMiddleware(), posts{}.update)
-	c.DELETE("posts/:id", AuthMiddleware(), posts{}.destroy)
+	c.DELETE("/posts/:id", AuthMiddleware(), posts{}.destroy)
+	c.POST("/posts/:id/vote", AuthMiddleware(), posts{}.vote)
 
 	// comments
 	c.POST("/comments", AuthMiddleware(), comments{}.create)
 	c.GET("/comments", comments{}.read)
 	c.GET("/comments/:id", comments{}.readOne)
 	c.PUT("/comments", AuthMiddleware(), comments{}.update)
-	c.DELETE("comments/:id", AuthMiddleware(), comments{}.destroy)
+	c.DELETE("/comments/:id", AuthMiddleware(), comments{}.destroy)
+	c.POST("/comments/:id/vote", AuthMiddleware(), comments{}.vote)
 
-	//vote
-	c.POST("/vote", AuthMiddleware(), c.castVote)
-}
-
-// castVote either upvotes or downvotes a post or comment
-func (x Core) castVote(c *gin.Context) {
-	var vote *models.Vote
-	if err := c.Bind(&vote); err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-	oid, err := primitive.ObjectIDFromHex(c.GetHeader("Authorization"))
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-	vote.Voter = oid
-	if err := vote.Cast(); err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	c.String(http.StatusOK, "Succesfully voted!")
 }

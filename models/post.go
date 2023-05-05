@@ -12,7 +12,8 @@ type Post struct {
 	Author    primitive.ObjectID `json:"_author" bson:"_author"`
 	Title     string             `json:"title" bson:"title"`
 	Body      string             `json:"body" bson:"body"`
-	Score     int                `json:"score" bson:"score"`
+	Score     int                `json:"score" bson:"-"`
+	Votes     []Vote             `json:"-" bson:"votes"`
 	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedAt time.Time          `json:"updatedAt" bson:"updatedAt"`
 }
@@ -52,16 +53,16 @@ func (x Post) GetAll() ([]*Post, error) {
 		if err := cur.Decode(&b); err != nil {
 			return nil, err
 		}
-		calculateScore(b)
+		b.calculateScore()
 		a = append(a, b)
 	}
 	return a, nil
 }
-func (x Post) Populate() (*Post, error) {
+func (x Post) Get() (*Post, error) {
 	if err := posts.FindOne(ctx, bson.M{"_id": x.ID}).Decode(&x); err != nil {
 		return nil, err
 	}
-	calculateScore(&x)
+	x.calculateScore()
 	return &x, nil
 }
 
@@ -90,4 +91,50 @@ func (x *Post) Destroy() error {
 	}
 	err := posts.FindOneAndDelete(ctx, filter).Decode(&x)
 	return err
+}
+
+func (x *Post) Vote(vote *Vote) error {
+
+	filter := bson.M{
+		"_id": x.ID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"votes": x.Votes,
+		},
+	}
+
+	i, exists := x.alreadyVoted(vote)
+	if exists {
+		if x.Votes[i].Val == vote.Val {
+			// remove vote
+			x.Votes = append(x.Votes[:i], x.Votes[i+1:]...)
+		} else {
+			// update vote
+			x.Votes[i] = *vote
+		}
+	} else {
+		// create vote
+		x.Votes = append(x.Votes, *vote)
+	}
+
+	if err := posts.FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (x *Post) alreadyVoted(vote *Vote) (int, bool) {
+	for i, v := range x.Votes {
+		if v.Voter == vote.Voter {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func (x *Post) calculateScore() {
+	for _, v := range x.Votes {
+		x.Score += int(v.Val)
+	}
 }

@@ -43,7 +43,7 @@ func (x users) readOne(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response{false, err.Error(), ""})
 		return
 	}
-	user, err := models.User{ID: oid}.Populate()
+	user, err := models.User{ID: oid}.Get()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response{false, err.Error(), ""})
 		return
@@ -65,7 +65,7 @@ func (x users) readAuthenticated(c *gin.Context) {
 		return
 	}
 
-	user, err := models.User{ID: oid}.Populate()
+	user, err := models.User{ID: oid}.Get()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response{false, err.Error(), ""})
 		return

@@ -24,25 +24,6 @@ type User struct {
 	UpdatedAt time.Time          `json:"uat" bson:"uat"`
 }
 
-// SetScore increments or decrements the users score by one
-//
-// it is a requirement of the 'voteable' interface
-func (x *User) SetScore(v bool) {
-	if v {
-		x.Score += 1
-	} else {
-		x.Score -= 1
-	}
-
-}
-
-// GetID simply returns the users id
-//
-// it is returned as a primitive.ObjectID and is a requirement for the 'voteable' interface
-func (x *User) GetID() primitive.ObjectID {
-	return x.ID
-}
-
 // nameUnique checks to see if there is already a user in the database with that name
 func (x *User) nameUnique() bool {
 	filter := bson.M{
@@ -116,7 +97,6 @@ func (x User) GetAll() ([]*User, error) {
 		if err := cur.Decode(&b); err != nil {
 			return nil, err
 		}
-		calculateScore(b)
 		a = append(a, b)
 	}
 
@@ -124,10 +104,9 @@ func (x User) GetAll() ([]*User, error) {
 }
 
 // Populate takes a user with only an id and uses it to fill out all other fields
-func (x User) Populate() (*User, error) {
+func (x User) Get() (*User, error) {
 
 	err := users.FindOne(ctx, bson.M{"_id": x.ID}).Decode(&x)
-	calculateScore(&x)
 	return &x, err
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-playground/validator/v10"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -26,26 +25,7 @@ func Init(x *mongo.Client) {
 	votes = x.Database("thoughtsea").Collection("votes")
 }
 
-type voteable interface {
-	SetScore(bool)
-	GetID() primitive.ObjectID
-}
-
-func calculateScore(v voteable) error {
-	filter := bson.M{
-		"parent": v.GetID(),
-	}
-	cur, err := votes.Find(ctx, filter)
-
-	for cur.Next(ctx) {
-		var i *Vote
-		err = cur.Decode(&i)
-		if err != nil {
-			return err
-		}
-
-		v.SetScore(i.Up)
-	}
-
-	return err
+type Vote struct {
+	Voter primitive.ObjectID `json:"voter" bson:"voter"`
+	Val   int8               `json:"val" bson:"val"`
 }

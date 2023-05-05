@@ -43,7 +43,7 @@ func (x comments) readOne(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	comment, err := models.Comment{ID: oid}.Populate()
+	comment, err := models.Comment{ID: oid}.Get()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -83,4 +83,27 @@ func (x comments) destroy(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, a)
+}
+
+func (x comments) vote(c *gin.Context) {
+	oid, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response{false, err.Error(), ""})
+		return
+	}
+	comment, err := models.Post{ID: oid}.Get()
+	if err != nil {
+		c.JSON(http.StatusNotFound, response{false, err.Error(), "no comment with that id"})
+		return
+	}
+	var vote *models.Vote
+	if err := c.Bind(vote); err != nil {
+		c.JSON(http.StatusBadRequest, response{false, err.Error(), "invalid vote object"})
+		return
+	}
+	if err := comment.Vote(vote); err != nil {
+		c.JSON(http.StatusInternalServerError, response{false, err.Error(), ""})
+		return
+	}
+	c.JSON(http.StatusOK, response{true, comment, "succesfully voted on post"})
 }
