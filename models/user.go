@@ -110,6 +110,7 @@ func (x User) GetAll() ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer cur.Close(ctx)
 	for cur.Next(ctx) {
 		var b *User
 		if err := cur.Decode(&b); err != nil {
@@ -137,8 +138,10 @@ func (x *User) Update() error {
 		"_id": x.ID,
 	}
 	update := bson.M{
-		"name":      x.Name,
-		"updatedAt": time.Now(),
+		"$set": bson.M{
+			"name":      x.Name,
+			"updatedAt": time.Now(),
+		},
 	}
 
 	err := users.FindOneAndUpdate(ctx, filter, update).Decode(&x)

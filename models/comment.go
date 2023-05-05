@@ -48,6 +48,7 @@ func (x Comment) GetAll() ([]*Comment, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer cur.Close(ctx)
 	for cur.Next(ctx) {
 		var b *Comment
 		if err := cur.Decode(&b); err != nil {
@@ -72,8 +73,10 @@ func (x *Comment) Update() error {
 		"id": x.ID,
 	}
 	update := bson.M{
-		"body":      x.Body,
-		"updatedAt": time.Now(),
+		"$set": bson.M{
+			"body":      x.Body,
+			"updatedAt": time.Now(),
+		},
 	}
 	err := comments.FindOneAndUpdate(ctx, filter, update).Err()
 	return err

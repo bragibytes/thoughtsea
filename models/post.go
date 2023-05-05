@@ -46,6 +46,7 @@ func (x Post) GetAll() ([]*Post, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer cur.Close(ctx)
 	for cur.Next(ctx) {
 		var b *Post
 		if err := cur.Decode(&b); err != nil {
@@ -67,12 +68,14 @@ func (x Post) Populate() (*Post, error) {
 func (x *Post) Update() error {
 
 	filter := bson.M{
-		"id": x.ID,
+		"_id": x.ID,
 	}
 	update := bson.M{
-		"title":      x.Title,
-		"body":       x.Body,
-		"_updatedAt": time.Now(),
+		"$set": bson.M{
+			"title":      x.Title,
+			"body":       x.Body,
+			"_updatedAt": time.Now(),
+		},
 	}
 
 	err := posts.FindOneAndUpdate(ctx, filter, update).Decode(&x)
